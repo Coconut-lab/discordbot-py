@@ -8,6 +8,4 @@ multidict==6.0.4
 python-dotenv==1.0.0
 typing_extensions==4.3.0
 yarl==1.9.2
-requests==2.31.0
-re==
-DateTime==5.2
+
