@@ -10,7 +10,7 @@ load_dotenv()
 
 
 TOKEN = os.environ['TOKEN']
-service_key = os.environ['KEY']
+KEY = os.environ['KEY']
 
 
 
@@ -37,7 +37,7 @@ async def on_message(message):
         print(f'{message.author} 님이 검색한 학교 이름: {school_name_to}')
 
         params = {
-            'KEY': service_key,
+            'KEY': KEY,
             'Type': 'json',
             'pIndex': '1',
             'pSize': '100',
@@ -61,7 +61,7 @@ async def on_message(message):
         meal = "https://open.neis.go.kr/hub/mealServiceDietInfo"
 
         params1 = {
-            'KEY': service_key,
+            'KEY': KEY,
             'Type': 'json',
             'pIndex': '1',
             'pSize': '100',
@@ -100,7 +100,7 @@ async def on_message(message):
         print(f'{message.author} 님이 검색한 내일 급식 학교 이름: {school_name}')
 
         params_info = {
-            'KEY': service_key,
+            'KEY': KEY,
             'Type': 'json',
             'pIndex': '1',
             'pSize': '100',
@@ -125,7 +125,7 @@ async def on_message(message):
         meal = "https://open.neis.go.kr/hub/mealServiceDietInfo"
 
         params_meal = {
-            'KEY': service_key,
+            'KEY': KEY,
             'Type': 'json',
             'pIndex': '1',
             'pSize': '100',
