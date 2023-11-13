@@ -85,7 +85,8 @@ async def on_message(message):
                 data = cleaned_text
 
                 formatted_data = data.replace(") ", ")\n").replace(")  (", ")\n(")
-
+                
+                await message.channel.send(today_date)
                 await message.channel.send(formatted_data)
             
         else:
