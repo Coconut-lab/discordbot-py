@@ -8,7 +8,7 @@ import os
 import re
 load_dotenv()
 
-PREFIX = os.environ['PREFIX']
+
 TOKEN = os.environ['TOKEN']
 service_key = os.environ['service_key']
 
