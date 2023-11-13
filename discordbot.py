@@ -10,7 +10,7 @@ load_dotenv()
 
 
 TOKEN = os.environ['TOKEN']
-service_key = os.environ['service_key']
+service_key = os.environ['KEY']
 
 
 
