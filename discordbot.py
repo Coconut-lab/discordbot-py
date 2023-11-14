@@ -77,17 +77,10 @@ async def on_message(message):
             for item in json_data1['mealServiceDietInfo'][1]['row']:
                 ddish_nm = item['DDISH_NM']
 
-                input_text = ddish_nm
-
-                cleaned_text = re.sub(r'<br/>', '', input_text)
-                cleaned_text = re.sub(r'\s*\(([^)]+)\)\s*', r' (\1) ', cleaned_text)
-
-                data = cleaned_text
-
-                formatted_data = data.replace(") ", ")\n").replace(")  (", ")\n(")
+                cleaned_text = ddish_nm.replace('<br/>', '\n')
                 
                 await message.channel.send(today_date)
-                await message.channel.send(formatted_data)
+                await message.channel.send(cleaned_text)
             
         else:
             await message.channel.send(today_date)
