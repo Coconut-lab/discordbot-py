@@ -5,6 +5,7 @@ from cmath import log
 from distutils.sysconfig import PREFIX
 from dotenv import load_dotenv
 from discord.ext import commands
+import json
 import os
 import asyncio
 load_dotenv()
@@ -190,9 +191,9 @@ async def find_school_info(ctx, *, args):
 
                     await ctx.send(f"{perio}교시 {itrt_cntnt}")
         else:
-            print("응답에 'hisTimetable' 키가 없습니다.")
+            await ctx.send("응답에 'hisTimetable' 키가 없습니다.")
     else:
-        print("에러:", response_time.status_code)
+        await ctx.send("에러:", response_time.status_code)
 
 
 client.run(TOKEN)
