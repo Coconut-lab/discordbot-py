@@ -13,21 +13,18 @@ load_dotenv()
 TOKEN = os.environ['TOKEN']
 KEY = os.environ['KEY']
 
-
-
 intents = discord.Intents.default()
 intents.message_content = True
 client = commands.Bot(command_prefix='$', intents=intents)
 
-
-sc_info = "https://open.neis.go.kr/hub/schoolInfo"
-meal_info = "https://open.neis.go.kr/hub/mealServiceDietInfo"
-
+sc_info_url = "https://open.neis.go.kr/hub/schoolInfo"
+meal_info_url = "https://open.neis.go.kr/hub/mealServiceDietInfo"
+sc_time = "https://open.neis.go.kr/hub/hisTimetable"
 
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
-    game = discord.Game("나이스 대국민서비스 일시 중단 및 지능형 나이스 전환에 따라 나이스 급식 시스템 연계가 잠시 중단됨을 알려드립니다.")
+    game = discord.Game("정상작동")
     await client.change_presence(status=discord.Status.online, activity=game)
 
 @client.event
@@ -47,7 +44,7 @@ async def find_school_info(ctx, *, school_name):
         'SCHUL_NM': school_name
     }
 
-    response = requests.get(sc_info, params=params)
+    response = requests.get(sc_info_url, params=params)
     json_data = response.json()
 
     if 'schoolInfo' in json_data and len(json_data['schoolInfo']) > 1 and 'row' in json_data['schoolInfo'][1]:
@@ -85,7 +82,7 @@ async def find_school_info(ctx, *, school_name):
                     'MLSV_YMD': selected_day_str
                 }
 
-                response = requests.get(meal_info, params=params1)
+                response = requests.get(meal_info_url, params=params1)
                 json_data = response.json()
 
                 if 'mealServiceDietInfo' in json_data and len(json_data['mealServiceDietInfo']) > 1 and 'row' in json_data['mealServiceDietInfo'][1]:
@@ -105,5 +102,97 @@ async def find_school_info(ctx, *, school_name):
                 
             except asyncio.TimeoutError:
                 await ctx.send('시간이 초과되었습니다. 다시 시도해주세요.')
+
+@client.command(name='시간표')
+async def find_school_info(ctx, *, args):
+    arguments = args.split()
+
+    if len(arguments) != 2:
+        await ctx.send('올바른 명령어 형식: $시간표 (학교이름) (학년반)')
+        return
+    
+    school_name = arguments[0]
+    grade_class = arguments[1]
+
+    if len(grade_class) == 3 and grade_class.isdigit():
+        grade = int(grade_class[0])
+        class_number = int(grade_class[1:])
+    else:
+        await ctx.send("올바른 학년반 형식이 아닙니다. 예시: 205")
+        return
+
+    await ctx.send(f'{school_name}, 학년: {grade}, 반: {class_number}')
+
+    params_info = {
+        'KEY': KEY,
+        'Type': 'json',
+        'pIndex': '1',
+        'pSize': '100',
+        'SCHUL_NM': school_name
+    }
+
+    response_info = requests.get(sc_info_url, params=params_info)
+    contents = json.loads(response_info.text)
+
+
+    school_info_list = contents['schoolInfo'][1]['row'] if 'schoolInfo' in contents else []
+
+    for item in school_info_list:
+        # 시도교육청 코드
+        atpt_ofcdc_sc_code = item['ATPT_OFCDC_SC_CODE']
+        # 학교 코드
+        sd_schul_code = item['SD_SCHUL_CODE']
+
+    today = datetime.now()
+    today_date = today.strftime('%Y%m%d')
+
+    def define_values(month):
+        if 3 <= month <= 7:
+            return 1
+        else:
+            return 2
+
+    # 현재 월을 얻어옴
+    current_month = datetime.now().month
+
+    # 현재 월의 값을 확인
+    current_month_value = define_values(current_month)
+
+    time_params = {
+        'KEY' : KEY,
+        'Type' : 'json',
+        'pIndex' : 1,
+        'pSize' : 100,
+        'ATPT_OFCDC_SC_CODE' : atpt_ofcdc_sc_code,
+        'SD_SCHUL_CODE' : sd_schul_code,
+        'AY' : datetime.now().year,
+        'SEM' : current_month_value,
+        'ALL_TI_YMD' : today_date,
+        'GRADE' : grade,
+        'CLASS_NM' : class_number
+    }
+
+    response_time = requests.get(sc_time, params=time_params)
+
+    # 요청이 성공했는지 확인 (상태 코드가 200인지 확인)
+    if response_time.status_code == 200:
+        data = json.loads(response_time.text)
+
+        if 'hisTimetable' in data:
+            # 'hisTimetable' 항목을 순회하면서 'PERIO'와 'ITRT_CNTNT' 필드의 값을 추출
+            for entry in data['hisTimetable']:
+                rows = entry.get('row', [])
+
+                # 'row'에 데이터가 있는지 확인하고, 있다면 'PERIO'와 'ITRT_CNTNT' 값을 출력
+                for row_data in rows:
+                    perio = row_data.get('PERIO')
+                    itrt_cntnt = row_data.get('ITRT_CNTNT')
+
+                    await ctx.send(f"{perio}교시 {itrt_cntnt}")
+        else:
+            print("응답에 'hisTimetable' 키가 없습니다.")
+    else:
+        print("에러:", response_time.status_code)
+
 
 client.run(TOKEN)
