@@ -37,12 +37,19 @@ async def on_message(message):
 
 @client.command(name='급식찾기')
 async def find_school_info(ctx, *, school_name):
+    if school_name.endswith(("고", "초")):
+        corrected_school_name = school_name + "등학교"
+    elif school_name.endswith("중"):
+        corrected_school_name = school_name + "학교"
+    else:
+        corrected_school_name = school_name
+
     params = {
         'KEY': KEY,
         'Type': 'json',
         'pIndex': '1',
         'pSize': '100',
-        'SCHUL_NM': school_name
+        'SCHUL_NM': corrected_school_name
     }
 
     response = requests.get(sc_info_url, params=params)
@@ -121,15 +128,22 @@ async def find_school_info(ctx, *, args):
     else:
         await ctx.send("올바른 학년반 형식이 아닙니다. 예시: 205")
         return
+    
+    if school_name.endswith(("고", "초")):
+        corrected_school_name = school_name + "등학교"
+    elif school_name.endswith("중"):
+        corrected_school_name = school_name + "학교"
+    else:
+        corrected_school_name = school_name
 
-    await ctx.send(f'{school_name}, 학년: {grade}, 반: {class_number}')
+    await ctx.send(f'{corrected_school_name}, 학년: {grade}, 반: {class_number}')
 
     params_info = {
         'KEY': KEY,
         'Type': 'json',
         'pIndex': '1',
         'pSize': '100',
-        'SCHUL_NM': school_name
+        'SCHUL_NM': corrected_school_name
     }
 
     response_info = requests.get(sc_info_url, params=params_info)
@@ -191,9 +205,9 @@ async def find_school_info(ctx, *, args):
 
                     await ctx.send(f"{perio}교시 {itrt_cntnt}")
         else:
-            await ctx.send("응답에 'hisTimetable' 키가 없습니다.")
+            print("응답에 'hisTimetable' 키가 없습니다.")
     else:
-        await ctx.send("에러:", response_time.status_code)
+        print("에러:", response_time.status_code)
 
 
 client.run(TOKEN)
