@@ -101,7 +101,7 @@ async def find_school_info(ctx, *, school_name):
                         meals.append(cleaned_text)
 
                     meal_text = '\n'.join(meals)
-                    await ctx.send(selected_day_str)
+                    await ctx.send(f'{selected_day_str}, {corrected_school_name}')
                     await ctx.send(f'{days[index]}의 급식:\n{meal_text}')
 
                 else:
@@ -152,62 +152,77 @@ async def find_school_info(ctx, *, args):
 
     school_info_list = contents['schoolInfo'][1]['row'] if 'schoolInfo' in contents else []
 
-    for item in school_info_list:
-        # 시도교육청 코드
-        atpt_ofcdc_sc_code = item['ATPT_OFCDC_SC_CODE']
-        # 학교 코드
-        sd_schul_code = item['SD_SCHUL_CODE']
+    if 'schoolInfo' in contents and len(contents['schoolInfo']) > 1 and 'row' in contents['schoolInfo'][1]:
+        for item in contents['schoolInfo'][1]['row']:
+            atpt_ofcdc_sc_code = item['ATPT_OFCDC_SC_CODE']
+            sd_schul_code = item['SD_SCHUL_CODE']
 
-    today = datetime.now()
-    today_date = today.strftime('%Y%m%d')
+            emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣']
+            days = ['월요일', '화요일', '수요일', '목요일', '금요일']
 
-    def define_values(month):
-        if 3 <= month <= 7:
-            return 1
-        else:
-            return 2
+            message = await ctx.send('날짜를 선택하세요! (1 = 월요일, 2 = 화요일, 3 = 수요일, 4 = 목요일, 5 = 금요일)')
+            for emoji in emojis:
+                await message.add_reaction(emoji)
 
-    # 현재 월을 얻어옴
-    current_month = datetime.now().month
+            def check(reaction, user):
+                return user == ctx.author and str(reaction.emoji) in emojis
+            
+            try:
+                reaction, _ = await client.wait_for('reaction_add', timeout=60.0, check=check)
 
-    # 현재 월의 값을 확인
-    current_month_value = define_values(current_month)
+                index = emojis.index(str(reaction.emoji))
 
-    time_params = {
-        'KEY' : KEY,
-        'Type' : 'json',
-        'pIndex' : 1,
-        'pSize' : 100,
-        'ATPT_OFCDC_SC_CODE' : atpt_ofcdc_sc_code,
-        'SD_SCHUL_CODE' : sd_schul_code,
-        'AY' : datetime.now().year,
-        'SEM' : current_month_value,
-        'ALL_TI_YMD' : today_date,
-        'GRADE' : grade,
-        'CLASS_NM' : class_number
-    }
+                today = datetime.today()
+                weekday_offset = (index - today.weekday() + 7) % 7
+                selected_day = today + timedelta(days=weekday_offset)
+                selected_day_str = selected_day.strftime('%Y%m%d')
 
-    response_time = requests.get(sc_time, params=time_params)
+                def define_values(month):
+                    if 3 <= month <= 7:
+                        return 1
+                    else:
+                        return 2
+                
+                # 현재 월을 얻어옴
+                current_month = datetime.now().month
 
-    # 요청이 성공했는지 확인 (상태 코드가 200인지 확인)
-    if response_time.status_code == 200:
-        data = json.loads(response_time.text)
+                # 현재 월의 값을 확인
+                current_month_value = define_values(current_month)
 
-        if 'hisTimetable' in data:
-            # 'hisTimetable' 항목을 순회하면서 'PERIO'와 'ITRT_CNTNT' 필드의 값을 추출
-            for entry in data['hisTimetable']:
-                rows = entry.get('row', [])
+                time_params = {
+                    'KEY' : KEY,
+                    'Type' : 'json',
+                    'pIndex' : 1,
+                    'pSize' : 100,
+                    'ATPT_OFCDC_SC_CODE' : atpt_ofcdc_sc_code,
+                    'SD_SCHUL_CODE' : sd_schul_code,
+                    'AY' : datetime.now().year,
+                    'SEM' : current_month_value,
+                    'ALL_TI_YMD' : selected_day_str,
+                    'GRADE' : grade,
+                    'CLASS_NM' : class_number
+                }
 
-                # 'row'에 데이터가 있는지 확인하고, 있다면 'PERIO'와 'ITRT_CNTNT' 값을 출력
-                for row_data in rows:
-                    perio = row_data.get('PERIO')
-                    itrt_cntnt = row_data.get('ITRT_CNTNT')
+                response_time = requests.get(sc_time, params=time_params)
 
-                    await ctx.send(f"{perio}교시 {itrt_cntnt}")
-        else:
-            print("응답에 'hisTimetable' 키가 없습니다.")
-    else:
-        print("에러:", response_time.status_code)
+                if response_time.status_code == 200:
+                    data = json.loads(response_time.text)
 
+                    if 'hisTimetable' in data:
+                        for entry in data['hisTimetable']:
+                            rows = entry.get('row', [])
+
+                            for row_data in rows:
+                                perio = row_data.get('PERIO')
+                                itrt_cntnt = row_data.get('ITRT_CNTNT')
+
+                                await ctx.send(f"{perio}교시 {itrt_cntnt}")
+                    else:
+                        await ctx.send("응답에 'hisTimetable' 키가 없습니다.")
+                else:
+                    await ctx.send("에러:", response_time.status_code)
+            
+            except asyncio.TimeoutError:
+                await ctx.send('시간이 초과되었습니다. 다시 시도해주세요.')
 
 client.run(TOKEN)
