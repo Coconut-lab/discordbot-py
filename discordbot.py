@@ -25,7 +25,7 @@ sc_time = "https://open.neis.go.kr/hub/hisTimetable"
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
-    game = discord.Game("정상작동")
+    game = discord.Game("정상작동 \n $명령어")
     await client.change_presence(status=discord.Status.online, activity=game)
 
 @client.event
@@ -34,6 +34,12 @@ async def on_message(message):
         return
 
     await client.process_commands(message)
+
+@client.command(name='명령어')
+async def on_message(ctx, *, help):
+    await ctx.message("### 급식찾기 명령어 \n $급식찾기 (학교이름)")
+    await ctx.message("### 시간표 명령어 \n $시간표 (학교이름) (자신 반 (305))")
+
 
 @client.command(name='급식찾기')
 async def find_school_info(ctx, *, school_name):
@@ -71,7 +77,7 @@ async def find_school_info(ctx, *, school_name):
                 return user == ctx.author and str(reaction.emoji) in emojis
             
             try:
-                reaction, _ = await client.wait_for('reaction_add', timeout=60.0, check=check)
+                reaction, _ = await client.wait_for('reaction_add', timeout=30.0, check=check)
 
                 index = emojis.index(str(reaction.emoji))
 
