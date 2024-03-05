@@ -1,3 +1,8 @@
+# 문제점
+# 시간표가 아직 API로 안올라옴
+# 시간표 API 요청 주소가 고등학교 중학교 초등학교로 나눠짐
+# 다만 요청인자는 변함없음
+
 import discord
 import requests
 from datetime import datetime, timedelta
@@ -20,12 +25,14 @@ client = commands.Bot(command_prefix='$', intents=intents)
 
 sc_info_url = "https://open.neis.go.kr/hub/schoolInfo"
 meal_info_url = "https://open.neis.go.kr/hub/mealServiceDietInfo"
-sc_time = "https://open.neis.go.kr/hub/hisTimetable"
+sc_histime = "https://open.neis.go.kr/hub/hisTimetable"
+sc_mistime = "https://open.neis.go.kr/hub/misTimetable"
+sc_elstime = "https://open.neis.go.kr/hub/elsTimetable"
 
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
-    game = discord.Game("정상작동 \n $명령어")
+    game = discord.Game("나이스 서버에 시간표 정보가 없습니다.")
     await client.change_presence(status=discord.Status.online, activity=game)
 
 @client.event
@@ -35,10 +42,10 @@ async def on_message(message):
 
     await client.process_commands(message)
 
-@client.command(name='명령어')
-async def on_message(ctx, *, help):
-    await ctx.message("### 급식찾기 명령어 \n $급식찾기 (학교이름)")
-    await ctx.message("### 시간표 명령어 \n $시간표 (학교이름) (자신 반 (305))")
+    @client.command(name='명령어')
+    async def on_message(ctx):
+        await ctx.message("### 급식찾기 명령어 \n $급식찾기 (학교이름)")
+        await ctx.message("### 시간표 명령어 \n $시간표 (학교이름) (자신 반 (305))")
 
 
 @client.command(name='급식찾기')
@@ -50,7 +57,7 @@ async def find_school_info(ctx, *, school_name):
     else:
         corrected_school_name = school_name
 
-    params = {
+    SC_info_params = {
         'KEY': KEY,
         'Type': 'json',
         'pIndex': '1',
@@ -58,7 +65,7 @@ async def find_school_info(ctx, *, school_name):
         'SCHUL_NM': corrected_school_name
     }
 
-    response = requests.get(sc_info_url, params=params)
+    response = requests.get(sc_info_url, params=SC_info_params)
     json_data = response.json()
 
     if 'schoolInfo' in json_data and len(json_data['schoolInfo']) > 1 and 'row' in json_data['schoolInfo'][1]:
@@ -86,7 +93,7 @@ async def find_school_info(ctx, *, school_name):
                 selected_day = today + timedelta(days=weekday_offset)
                 selected_day_str = selected_day.strftime('%Y%m%d')
 
-                params1 = {
+                meal_params = {
                     'KEY': KEY,
                     'Type': 'json',
                     'pIndex': '1',
@@ -96,7 +103,7 @@ async def find_school_info(ctx, *, school_name):
                     'MLSV_YMD': selected_day_str
                 }
 
-                response = requests.get(meal_info_url, params=params1)
+                response = requests.get(meal_info_url, params=meal_params)
                 json_data = response.json()
 
                 if 'mealServiceDietInfo' in json_data and len(json_data['mealServiceDietInfo']) > 1 and 'row' in json_data['mealServiceDietInfo'][1]:
@@ -108,7 +115,7 @@ async def find_school_info(ctx, *, school_name):
 
                     meal_text = '\n'.join(meals)
                     await ctx.send(f'{selected_day_str}, {corrected_school_name}')
-                    await ctx.send(f'## {days[index]} 급식:\n{meal_text}')
+                    await ctx.send(f'{days[index]}의 급식:\n{meal_text}')
 
                 else:
                     await ctx.send(selected_day_str)
@@ -144,6 +151,7 @@ async def find_school_info(ctx, *, args):
 
     await ctx.send(f'{corrected_school_name}, 학년: {grade}, 반: {class_number}')
 
+    # 학교정보찾기
     params_info = {
         'KEY': KEY,
         'Type': 'json',
@@ -174,7 +182,7 @@ async def find_school_info(ctx, *, args):
                 return user == ctx.author and str(reaction.emoji) in emojis
             
             try:
-                reaction, _ = await client.wait_for('reaction_add', timeout=60.0, check=check)
+                reaction, _ = await client.wait_for('reaction_add', timeout=30.0, check=check)
 
                 index = emojis.index(str(reaction.emoji))
 
@@ -195,38 +203,108 @@ async def find_school_info(ctx, *, args):
                 # 현재 월의 값을 확인
                 current_month_value = define_values(current_month)
 
-                time_params = {
-                    'KEY' : KEY,
-                    'Type' : 'json',
-                    'pIndex' : 1,
-                    'pSize' : 100,
-                    'ATPT_OFCDC_SC_CODE' : atpt_ofcdc_sc_code,
-                    'SD_SCHUL_CODE' : sd_schul_code,
-                    'AY' : datetime.now().year,
-                    'SEM' : current_month_value,
-                    'ALL_TI_YMD' : selected_day_str,
-                    'GRADE' : grade,
-                    'CLASS_NM' : class_number
-                }
+                # 초,중,고 학교 분리
+                if corrected_school_name.endswith(("고등학교")):
+                    histime_params = {
+                        'KEY' : KEY,
+                        'Type' : 'json',
+                        'pIndex' : 1,
+                        'pSize' : 100,
+                        'ATPT_OFCDC_SC_CODE' : atpt_ofcdc_sc_code,
+                        'SD_SCHUL_CODE' : sd_schul_code,
+                        'AY' : datetime.now().year,
+                        'SEM' : current_month_value,
+                        'ALL_TI_YMD' : selected_day_str,
+                        'GRADE' : grade,
+                        'CLASS_NM' : class_number
+                    }
+                    
+                    response_histime = requests.get(sc_histime, params=histime_params)
 
-                response_time = requests.get(sc_time, params=time_params)
+                    if response_histime.status_code == 200:
+                        data = json.loads(response_histime.txt)
 
-                if response_time.status_code == 200:
-                    data = json.loads(response_time.text)
+                        if 'hisTimetable' in data:
+                            for entry in data ['hisTimetable']:
+                                rows = entry.get('row', [])
 
-                    if 'hisTimetable' in data:
-                        for entry in data['hisTimetable']:
-                            rows = entry.get('row', [])
+                                for row_data in rows:
+                                    perio = row_data.get('PERIO')
+                                    itrt_cntnt = row_data.get('ITRT_CNTNT')
 
-                            for row_data in rows:
-                                perio = row_data.get('PERIO')
-                                itrt_cntnt = row_data.get('ITRT_CNTNT')
-
-                                await ctx.send(f"**{perio}교시** {itrt_cntnt}")
+                                    await ctx.send(f"{perio}교시 {itrt_cntnt}")
+                        else:
+                            await ctx.send("데이터가 없습니다.")
                     else:
-                        await ctx.send("응답에 'hisTimetable' 키가 없습니다.")
-                else:
-                    await ctx.send("에러:", response_time.status_code)
+                        await ctx.send("에러:", response_histime.status_code)
+                
+                elif corrected_school_name.endswith(("중학교")):
+                    mistime_params = {
+                        'KEY' : KEY,
+                        'Type' : 'json',
+                        'pIndex' : 1,
+                        'pSize' : 100,
+                        'ATPT_OFCDC_SC_CODE' : atpt_ofcdc_sc_code,
+                        'SD_SCHUL_CODE' : sd_schul_code,
+                        'AY' : datetime.now().year,
+                        'SEM' : current_month_value,
+                        'ALL_TI_YMD' : selected_day_str,
+                        'GRADE' : grade,
+                        'CLASS_NM' : class_number
+                    }
+
+                    response_mistime = requests.get(sc_histime, params=mistime_params)
+
+                    if response_mistime.status_code == 200:
+                        data = json.load(response_mistime.txt)
+
+                        if 'misTimetable' in data:
+                            for entry in data ['misTimetable']:
+                                rows = entry.get('row', [])
+
+                                for row_data in rows:
+                                    perio = row_data.get('PERIO')
+                                    itrt_cntnt = row_data.get('ITRT_CNTNT')
+
+                                    await ctx.send(f"{perio}교시  {itrt_cntnt}")
+                        else:
+                            await ctx.send("데이터가 없습니다.")
+                    else:
+                        await ctx.send("에러", response_mistime.status_code)
+                                
+                elif corrected_school_name.endswith(("초등학교")):
+                    elstime_params = {
+                        'KEY' : KEY,
+                        'Type' : 'json',
+                        'pIndex' : 1,
+                        'pSize' : 100,
+                        'ATPT_OFCDC_SC_CODE' : atpt_ofcdc_sc_code,
+                        'SD_SCHUL_CODE' : sd_schul_code,
+                        'AY' : datetime.now().year,
+                        'SEM' : current_month_value,
+                        'ALL_TI_YMD' : selected_day_str,
+                        'GRADE' : grade,
+                        'CLASS_NM' : class_number
+                    }
+
+                    response_elstime = requests.get(sc_elstime, params=elstime_params)
+
+                    if response_elstime.status_code == 200:
+                        data =json.loads(response_elstime.txt)
+
+                        if 'elsTimetable' in data:
+                            for entry in data ['elsTimetable']:
+                                rows = entry.get('row', [])
+
+                                for row_data in rows:
+                                    perio = row_data.get('PERIO')
+                                    itrt_cntnt = row_data.get('ITRT_CNTNT')
+
+                                    await ctx.send(f"{perio}교시 {itrt_cntnt}")
+                        else:
+                            await ctx.send("데이터가 없습니다.")
+                    else:
+                        await ctx.send("에러:", response_elstime.status_code)
             
             except asyncio.TimeoutError:
                 await ctx.send('시간이 초과되었습니다. 다시 시도해주세요.')
