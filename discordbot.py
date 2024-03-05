@@ -42,11 +42,6 @@ async def on_message(message):
 
     await client.process_commands(message)
 
-    @client.command(name='명령어')
-    async def on_message(ctx):
-        await ctx.message("### 급식찾기 명령어 \n $급식찾기 (학교이름)")
-        await ctx.message("### 시간표 명령어 \n $시간표 (학교이름) (자신 반 (305))")
-
 
 @client.command(name='급식찾기')
 async def find_school_info(ctx, *, school_name):
@@ -222,7 +217,7 @@ async def find_school_info(ctx, *, args):
                     response_histime = requests.get(sc_histime, params=histime_params)
 
                     if response_histime.status_code == 200:
-                        data = json.loads(response_histime.txt)
+                        data = json.loads(response_histime.text)
 
                         if 'hisTimetable' in data:
                             for entry in data ['hisTimetable']:
@@ -256,7 +251,7 @@ async def find_school_info(ctx, *, args):
                     response_mistime = requests.get(sc_histime, params=mistime_params)
 
                     if response_mistime.status_code == 200:
-                        data = json.load(response_mistime.txt)
+                        data = json.loads(response_mistime.text)
 
                         if 'misTimetable' in data:
                             for entry in data ['misTimetable']:
@@ -290,7 +285,7 @@ async def find_school_info(ctx, *, args):
                     response_elstime = requests.get(sc_elstime, params=elstime_params)
 
                     if response_elstime.status_code == 200:
-                        data =json.loads(response_elstime.txt)
+                        data =json.loads(response_elstime.text)
 
                         if 'elsTimetable' in data:
                             for entry in data ['elsTimetable']:
