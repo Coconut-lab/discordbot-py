@@ -110,7 +110,7 @@ async def find_school_info(ctx, *, school_name):
 
                     meal_text = '\n'.join(meals)
                     await ctx.send(f'{selected_day_str}, {corrected_school_name}')
-                    await ctx.send(f'{days[index]}의 급식:\n{meal_text}')
+                    await ctx.send(f'## {days[index]} 급식:\n{meal_text}')
 
                 else:
                     await ctx.send(selected_day_str)
@@ -227,7 +227,7 @@ async def find_school_info(ctx, *, args):
                                     perio = row_data.get('PERIO')
                                     itrt_cntnt = row_data.get('ITRT_CNTNT')
 
-                                    await ctx.send(f"{perio}교시 {itrt_cntnt}")
+                                    await ctx.send(f"**{perio}교시 {itrt_cntnt}**")
                         else:
                             await ctx.send("데이터가 없습니다.")
                     else:
@@ -261,7 +261,7 @@ async def find_school_info(ctx, *, args):
                                     perio = row_data.get('PERIO')
                                     itrt_cntnt = row_data.get('ITRT_CNTNT')
 
-                                    await ctx.send(f"{perio}교시  {itrt_cntnt}")
+                                    await ctx.send(f"**{perio}교시  {itrt_cntnt}**")
                         else:
                             await ctx.send("데이터가 없습니다.")
                     else:
@@ -295,7 +295,7 @@ async def find_school_info(ctx, *, args):
                                     perio = row_data.get('PERIO')
                                     itrt_cntnt = row_data.get('ITRT_CNTNT')
 
-                                    await ctx.send(f"{perio}교시 {itrt_cntnt}")
+                                    await ctx.send(f"**{perio}교시 {itrt_cntnt}**")
                         else:
                             await ctx.send("데이터가 없습니다.")
                     else:
