@@ -217,7 +217,7 @@ async def find_school_info(ctx, *, args):
                     response_histime = requests.get(sc_histime, params=histime_params)
 
                     if response_histime.status_code == 200:
-                        data = json.loads(response_histime.text)
+                        data = response_histime.json()
 
                         if 'hisTimetable' in data:
                             for entry in data ['hisTimetable']:
@@ -248,10 +248,10 @@ async def find_school_info(ctx, *, args):
                         'CLASS_NM' : class_number
                     }
 
-                    response_mistime = requests.get(sc_histime, params=mistime_params)
+                    response_mistime = requests.get(sc_mistime, params=mistime_params)
 
                     if response_mistime.status_code == 200:
-                        data = json.loads(response_mistime.text)
+                        data = response_mistime.json()
 
                         if 'misTimetable' in data:
                             for entry in data ['misTimetable']:
